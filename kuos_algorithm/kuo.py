@@ -49,7 +49,7 @@ def remove_successors(s_i):
         G.remove_edge(u, v)
     return successor_list
 
-def implication(G: SGraph, i = 0):
+def implication(G: SGraph, i = 1):
     # If the reachable set is the whole set of nodes, return successful
     if len(G.reachable) == len(G.nodes):
         debug(f"Implication Successful at level {i}")
@@ -65,6 +65,8 @@ def implication(G: SGraph, i = 0):
         # Update New Reachable Set
         G.sets.append(s_i)
         G.reachable = G.reachable.union(s_i)
+
+        debug(f"Implication: {G.sets[min(i-1, len(G.sets)-1)]} -> {s_i}")
         
         # Remove Edges
         successor_list = remove_successors(s_i)
@@ -84,7 +86,7 @@ def implication(G: SGraph, i = 0):
             (u, v) = G.restore_edge()
         return False
     else:
-        debug(f"Implication Failed at level {i}")
+        debug(f"No Further implications found at level {i}")
         return False
     
 def run_combination(G: SGraph, k: int):

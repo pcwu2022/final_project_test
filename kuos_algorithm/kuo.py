@@ -1,5 +1,7 @@
 import networkx as nx
 
+DEBUG = True
+
 # Class for working with Heap & Graph
 class SGraph(nx.DiGraph):
     def __init__(self, iterable, **attr):
@@ -24,6 +26,12 @@ class SGraph(nx.DiGraph):
         self.add_edge(u, v)
         return (u, v)
 
+# Debug Print
+def debug(*message):
+    global DEBUG
+    if DEBUG:
+        print(*message)
+
 # Read File and Create Graph
 def get_graph_from_file(filename) -> SGraph:
 
@@ -32,9 +40,19 @@ def get_graph_from_file(filename) -> SGraph:
 
     return SGraph(input_edges)
 
+def remove_successors(s_i):
+    successor_list = []
+    for u in s_i:
+        for v in G.successors(u):
+            successor_list.append((u, v))
+    for (u, v) in successor_list:
+        G.remove_edge(u, v)
+    return successor_list
+
 def implication(G: SGraph, i = 0):
     # If the reachable set is the whole set of nodes, return successful
     if len(G.reachable) == len(G.nodes):
+        debug(f"Implication Successful at level {i}")
         return True
     
     # Find all nodes with in_degree 0
@@ -49,40 +67,74 @@ def implication(G: SGraph, i = 0):
         G.reachable = G.reachable.union(s_i)
         
         # Remove Edges
-        successor_list = []
-        for u in s_i:
-            for v in G.successors(u):
-                successor_list.append((u, v))
-        for (u, v) in successor_list:
-            G.remove_edge(u, v)
-            print(f"Removed edge ({u}, {v}) at level {i}")
+        successor_list = remove_successors(s_i)
 
         # Recursively Call implication
         implication_success = implication(G, i + 1)
         
         # Handle Recursion Result
-        if not implication_success:
-            # Backtrack if Unsuccessful
-            G.sets.pop()
-            G.reachable = G.reachable.difference(s_i)
-            # Restore Removed Edges
-            for _ in range(len(successor_list)):
-                (u, v) = G.restore_edge()
-                print(f"Restored edge ({u}, {v}) at level {i}")
-            return False
-        return True
+        if implication_success:
+            return True
+        
+        # Backtrack if Unsuccessful
+        G.sets.pop()
+        G.reachable = G.reachable.difference(s_i)
+        # Restore Removed Edges
+        for _ in range(len(successor_list)):
+            (u, v) = G.restore_edge()
+        return False
     else:
-        print(f"Implication Failed at level {i}")
+        debug(f"Implication Failed at level {i}")
         return False
     
+def run_combination(G: SGraph, k: int):
+    s_0 = G.sets[0]
+    k0 = len(s_0)
+    if k - k0 == 0:
+        debug(f"Testing Implication with S0: {s_0}")
+        return implication(G, 1)
+    s_0_prime = set(G.nodes).difference(s_0)
+    for node in s_0_prime:
+        # Expand s_0
+        G.sets[0].add(node)
+        G.reachable.add(node)
+
+        # Remove Successors
+        successor_list = remove_successors(set([node]))
+
+        # Recursive Call
+        run_success = run_combination(G, k - 1)
+
+        # Handle Recursion Result
+        if run_success:
+            return True
+        
+        # Backtrack if Unsuccessful
+        G.sets[0].remove(node)
+        G.reachable.remove(node)
+        for _ in range(len(successor_list)):
+            (u, v) = G.restore_edge()
+    return False
 
 # Main Algorithm
-def kuos_algorithm(G: SGraph, k = 0):
-    implication(G, 0)
+def kuos_algorithm(G: SGraph):
+    # Find s_0
+    s_0 = set()
+    for node, degree in G.in_degree():
+        if degree == 0:
+            if node not in G.reachable:
+                s_0.add(node)
+    k0 = len(s_0)
+    G.sets = [s_0]
+    G.reachable = G.reachable.union(s_0)
+    remove_successors(s_0)
+    for k in range(k0, len(G.nodes)):
+        success_at_k = run_combination(G, k)
+        if success_at_k:
+            return G.sets[0]
 
 
 # Run Algorithm
 if __name__ == "__main__":
     G = get_graph_from_file("./data/sample.in.txt")
-    kuos_algorithm(G)
-
+    print(f"Smallest Set: {kuos_algorithm(G)}")

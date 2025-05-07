@@ -36,7 +36,12 @@ def debug(*message):
 def get_graph_from_file(filename) -> SGraph:
 
     with open(filename, "r") as file:
-        input_edges = [(line.split(' ')[0], line.split(' ')[1]) for line in file.read().splitlines()]
+        input_edges = []
+        for line in file.read().splitlines():
+            edges = line.split(' ')
+            # Exclude self-edges
+            if edges[0] != edges[1]:
+                input_edges.append((edges[0], edges[1]))
 
     return SGraph(input_edges)
 
@@ -138,5 +143,5 @@ def kuos_algorithm(G: SGraph):
 
 # Run Algorithm
 if __name__ == "__main__":
-    G = get_graph_from_file("./data/sample.in.txt")
+    G = get_graph_from_file("./data/word_adj_map_3000.txt")
     print(f"Smallest Set: {kuos_algorithm(G)}")

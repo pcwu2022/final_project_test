@@ -143,5 +143,5 @@ def kuos_algorithm(G: SGraph):
 
 # Run Algorithm
 if __name__ == "__main__":
-    G = get_graph_from_file("./data/word_adj_map_3000.txt")
+    G = get_graph_from_file("./data/word_adj_map_1000.txt")
     print(f"Smallest Set: {kuos_algorithm(G)}")
